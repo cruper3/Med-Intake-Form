@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Medication Intake</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue: #1a6fdb;
+    --blue-light: #e8f0fd;
+    --blue-mid: #b8d0f8;
+    --text: #1a1a1a;
+    --text-muted: #5a6272;
+    --text-hint: #8c95a6;
+    --border: #dde1ea;
+    --border-focus: #1a6fdb;
+    --bg: #f5f7fa;
+    --bg-card: #ffffff;
+    --bg-med: #f9fafc;
+    --success: #1a7f5a;
+    --success-bg: #e6f5ee;
+    --danger: #c0392b;
+    --danger-bg: #fdf0ee;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .page-header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .page-header h1 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .page-header p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .form-body {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  .section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  @media (max-width: 600px) {
+    .row2, .row3 { grid-template-columns: 1fr; }
+  }
+
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label.field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  input[type=text],
+  input[type=date],
+  input[type=tel],
+  select,
+  textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(26,111,219,0.12);
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a6272' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+
+  .checkbox-row input[type=checkbox] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--blue);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .checkbox-row span {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  /* RxNorm search */
+  .rxnorm-wrap { position: relative; }
+
+  .rxnorm-input {
+    width: 100%;
+    padding: 8px 10px 8px 34px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .rxnorm-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(26,111,219,0.12);
+  }
+
+  .rxnorm-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-hint);
+    pointer-events: none;
+  }
+
+  .rxnorm-spinner {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+  .rxnorm-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    z-index: 100;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .rxnorm-dropdown.open { display: block; }
+
+  .dd-item {
+    padding: 9px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f2f5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: background 0.1s;
+  }
+
+  .dd-item:last-child { border-bottom: none; }
+  .dd-item:hover, .dd-item.kbd-active { background: var(--blue-light); }
+
+  .dd-item-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .dd-item-type {
+    font-size: 11px;
+    color: #fff;
+    background: var(--blue);
+    padding: 2px 7px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+
+  .dd-status {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .selected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--blue-light);
+    border: 1px solid var(--blue-mid);
+    color: var(--blue);
+    border-radius: 20px;
+    padding: 4px 10px 4px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 5px;
+  }
+
+  .pill-x {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--blue);
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.6;
+    font-family: inherit;
+  }
+
+  .pill-x:hover { opacity: 1; }
+
+  /* Med cards */
+  .med-card {
+    background: var(--bg-med);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  .med-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .med-card-num {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-hint);
+  }
+
+  .remove-med {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.1s, color 0.1s;
+  }
+
+  .remove-med:hover {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-color: #f5c0ba;
+  }
+
+  /* Add button */
+  .add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+    background: var(--blue-light);
+    border: 1px solid var(--blue-mid);
+    border-radius: var(--radius);
+    padding: 7px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+    margin-top: 4px;
+  }
+
+  .add-btn:hover { opacity: 0.8; }
+
+  /* Submit */
+  .submit-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 11px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+    margin-top: 12px;
+  }
+
+  .submit-btn:hover { opacity: 0.88; }
+  .submit-btn:active { opacity: 0.8; }
+
+  .notice {
+    background: var(--blue-light);
+    border: 1px solid var(--blue-mid);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #1a4f9e;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid #a8dfc5;
+    border-radius: var(--radius);
+    padding: 11px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: transform 0.3s ease;
+    z-index: 999;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .divider { margin: 10px 0; border: none; border-top: 1px solid var(--border); }
+
+  hr.soft { border: none; border-top: 1px solid #f0f2f5; margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Patient Medication Intake Form</h1>
+  <p>Powered by RxNorm &mdash; NLM Drug Database</p>
+</div>
+
+<div class="form-body">
+
+  <div class="notice">
+    &#9432; Please list <strong>all</strong> medications including prescriptions, over-the-counter drugs, vitamins, supplements, and herbal products. Type any medication name to search the RxNorm database.
+  </div>
+
+  <!-- Patient Info -->
+  <div class="section">
+    <div class="section-title">Patient information</div>
+    <div class="row2">
+      <div class="field"><label class="field-label">First name</label><input type="text" placeholder="First name" id="fname"></div>
+      <div class="field"><label class="field-label">Last name</label><input type="text" placeholder="Last name" id="lname"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label class="field-label">Date of birth</label><input type="date" id="dob"></div>
+      <div class="field"><label class="field-label">Date completed</label><input type="date" id="doc"></div>
+    </div>
+    <div class="field"><label class="field-label">Primary care provider</label><input type="text" placeholder="Provider name" id="pcp"></div>
+  </div>
+
+  <!-- Allergies -->
+  <div class="section">
+    <div class="section-title">Allergies &amp; adverse reactions</div>
+    <label class="checkbox-row">
+      <input type="checkbox" id="nkda">
+      <span>No known drug allergies (NKDA)</span>
+    </label>
+    <div id="allergy-fields">
+      <div class="row2">
+        <div class="field"><label class="field-label">Drug allergy</label><input type="text" placeholder="e.g. Penicillin"></div>
+        <div class="field"><label class="field-label">Reaction description</label><input type="text" placeholder="e.g. Rash, anaphylaxis"></div>
+      </div>
+      <div class="field"><label class="field-label">Non-drug allergies</label><input type="text" placeholder="e.g. Latex, shellfish, contrast dye"></div>
+    </div>
+  </div>
+
+  <!-- Rx Meds -->
+  <div class="section">
+    <div class="section-title">Current prescription medications</div>
+    <div id="rx-meds"></div>
+    <button class="add-btn" onclick="addMed('rx-meds','rx')">
+      ＋ Add prescription medication
+    </button>
+  </div>
+
+  <!-- OTC / Supplements -->
+  <div class="section">
+    <div class="section-title">OTC medications, vitamins &amp; supplements</div>
+    <div id="otc-meds"></div>
+    <button class="add-btn" onclick="addMed('otc-meds','otc')">
+      ＋ Add OTC / supplement
+    </button>
+  </div>
+
+  <!-- Discontinued -->
+  <div class="section">
+    <div class="section-title">Recently discontinued medications</div>
+    <div id="dc-meds"></div>
+    <button class="add-btn" onclick="addDC()">
+      ＋ Add discontinued medication
+    </button>
+  </div>
+
+  <!-- Pharmacy -->
+  <div class="section">
+    <div class="section-title">Pharmacy information</div>
+    <div class="row2">
+      <div class="field"><label class="field-label">Pharmacy name</label><input type="text" placeholder="Pharmacy name"></div>
+      <div class="field"><label class="field-label">Pharmacy phone</label><input type="tel" placeholder="(xxx) xxx-xxxx"></div>
+    </div>
+    <label class="checkbox-row">
+      <input type="checkbox" id="mail-order">
+      <span>I use mail-order pharmacy</span>
+    </label>
+  </div>
+
+  <!-- Attestation + Submit -->
+  <div class="submit-section">
+    <div class="section-title">Patient attestation</div>
+    <label class="checkbox-row" id="attest-row">
+      <input type="checkbox" id="attest">
+      <span>I confirm this medication list is accurate to the best of my knowledge.</span>
+    </label>
+    <div class="row2" style="margin-top:10px">
+      <div class="field"><label class="field-label">Patient signature (type full name)</label><input type="text" placeholder="Type full legal name" id="sig"></div>
+      <div class="field"><label class="field-label">Date</label><input type="date" id="sig-date"></div>
+    </div>
+    <button class="submit-btn" onclick="handleSubmit()">Submit Medication List</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">&#10003; Submitted successfully — thank you!</div>
+
+<script>
+// Set today's date
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('doc').value = today;
+document.getElementById('sig-date').value = today;
+
+// NKDA toggle
+document.getElementById('nkda').addEventListener('change', function() {
+  const af = document.getElementById('allergy-fields');
+  af.style.opacity = this.checked ? '0.35' : '1';
+  af.style.pointerEvents = this.checked ? 'none' : '';
+});
+
+let rxCount = 0, otcCount = 0, dcCount = 0;
+const timers = {};
+
+function debounce(fn, ms, key) {
+  clearTimeout(timers[key]);
+  timers[key] = setTimeout(fn, ms);
+}
+
+// RxNorm API search
+async function searchRxNorm(query, dd, spinner, inp, pillArea) {
+  if (query.length < 2) { dd.classList.remove('open'); return; }
+  spinner.style.display = 'block';
+  dd.innerHTML = '<div class="dd-status"><span style="width:14px;height:14px;border:2px solid #dde1ea;border-top-color:#1a6fdb;border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;flex-shrink:0"></span> Searching RxNorm database...</div>';
+  dd.classList.add('open');
+  try {
+    const resp = await fetch('https://rxnav.nlm.nih.gov/REST/drugs.json?name=' + encodeURIComponent(query));
+    if (!resp.ok) throw new Error('Network error');
+    const data = await resp.json();
+    spinner.style.display = 'none';
+    const groups = (data.drugGroup && data.drugGroup.conceptGroup) || [];
+    const results = [];
+    const seen = new Set();
+    const ttyLabels = { IN: 'Ingredient', BN: 'Brand', SCD: 'Clinical Drug', SBD: 'Branded Drug', PIN: 'Precise Ingredient', MIN: 'Multi-Ingredient', SCDF: 'Drug Form', SBDF: 'Branded Form' };
+    groups.forEach(g => {
+      if (!g.conceptProperties) return;
+      g.conceptProperties.forEach(p => {
+        if (!seen.has(p.name.toLowerCase())) {
+          seen.add(p.name.toLowerCase());
+          results.push({ name: p.name, rxcui: p.rxcui, tty: ttyLabels[g.tty] || g.tty });
+        }
+      });
+    });
+    if (results.length === 0) {
+      dd.innerHTML = '<div class="dd-status">No results found — you may enter the name manually.</div>';
+      return;
+    }
+    dd.innerHTML = '';
+    results.slice(0, 14).forEach((item, i) => {
+      const el = document.createElement('div');
+      el.className = 'dd-item' + (i === 0 ? ' kbd-active' : '');
+      el.innerHTML = '<span class="dd-item-name">' + escHtml(item.name) + '</span><span class="dd-item-type">' + escHtml(item.tty || '') + '</span>';
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        selectMed(item.name, item.rxcui, inp, pillArea, dd);
+      });
+      dd.appendChild(el);
+    });
+  } catch(e) {
+    spinner.style.display = 'none';
+    dd.innerHTML = '<div class="dd-status">Search unavailable — please type medication name manually.</div>';
+  }
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function selectMed(name, rxcui, inp, pillArea, dd) {
+  inp.value = '';
+  inp.dataset.selectedName = name;
+  inp.dataset.rxcui = rxcui || '';
+  inp.placeholder = 'Search to replace...';
+  pillArea.innerHTML = '<div class="selected-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' + escHtml(name) + '<button class="pill-x" onclick="clearPill(this)" title="Remove">&times;</button></div>';
+  dd.classList.remove('open');
+}
+
+function clearPill(btn) {
+  const pill = btn.closest('.selected-pill');
+  const card = pill.closest('.med-card');
+  const inp = card.querySelector('.rxnorm-input');
+  inp.dataset.selectedName = '';
+  inp.dataset.rxcui = '';
+  inp.placeholder = 'Type to search RxNorm (e.g. lisin...)';
+  pill.remove();
+}
+
+function makeRxField(uid, labelText) {
+  const wrap = document.createElement('div');
+  wrap.className = 'field';
+  wrap.innerHTML = '<label class="field-label">' + labelText + '</label>';
+  const rxWrap = document.createElement('div');
+  rxWrap.className = 'rxnorm-wrap';
+  rxWrap.innerHTML =
+    '<svg class="rxnorm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+    '<input class="rxnorm-input" type="text" placeholder="Type to search RxNorm (e.g. lisin...)" autocomplete="off" data-uid="' + uid + '" data-selected-name="" data-rxcui="">' +
+    '<div class="rxnorm-spinner" id="sp-' + uid + '"></div>' +
+    '<div class="rxnorm-dropdown" id="dd-' + uid + '"></div>';
+  wrap.appendChild(rxWrap);
+  const pillArea = document.createElement('div');
+  pillArea.id = 'pill-' + uid;
+  wrap.appendChild(pillArea);
+
+  const inp = rxWrap.querySelector('.rxnorm-input');
+  const dd = rxWrap.querySelector('.rxnorm-dropdown');
+  const sp = rxWrap.querySelector('.rxnorm-spinner');
+
+  inp.addEventListener('input', function() {
+    debounce(() => searchRxNorm(inp.value.trim(), dd, sp, inp, pillArea), 300, uid);
+  });
+  inp.addEventListener('blur', function() {
+    setTimeout(() => dd.classList.remove('open'), 180);
+  });
+  inp.addEventListener('focus', function() {
+    if (inp.value.length >= 2 && dd.children.length) dd.classList.add('open');
+  });
+  return wrap;
+}
+
+function addMed(containerId, type) {
+  const container = document.getElementById(containerId);
+  const n = type === 'rx' ? ++rxCount : ++otcCount;
+  const uid = type + '_' + n;
+  const card = document.createElement('div');
+  card.className = 'med-card';
+  card.id = 'card-' + uid;
+
+  const header = document.createElement('div');
+  header.className = 'med-card-header';
+  header.innerHTML = '<span class="med-card-num">Medication ' + n + '</span><button class="remove-med" onclick="removeCard(\'card-' + uid + '\')">Remove</button>';
+  card.appendChild(header);
+
+  card.appendChild(makeRxField(uid, 'Medication name'));
+
+  const r1 = document.createElement('div');
+  r1.className = 'row3';
+  r1.style.marginTop = '8px';
+  r1.innerHTML =
+    '<div class="field"><label class="field-label">Dose / strength</label><input type="text" placeholder="e.g. 10 mg"></div>' +
+    '<div class="field"><label class="field-label">Dosage form</label><select><option value="">Select...</option><option>Tablet</option><option>Capsule</option><option>Liquid / solution</option><option>Patch</option><option>Inhaler</option><option>Injection</option><option>Cream / ointment</option><option>Other</option></select></div>' +
+    '<div class="field"><label class="field-label">Route</label><select><option value="">Select...</option><option>By mouth (oral)</option><option>Topical</option><option>Inhaled</option><option>Injection / SubQ</option><option>IV</option><option>Sublingual</option><option>Other</option></select></div>';
+  card.appendChild(r1);
+
+  const r2 = document.createElement('div');
+  r2.className = 'row3';
+  r2.innerHTML =
+    '<div class="field"><label class="field-label">Frequency</label><select><option value="">Select...</option><option>Once daily (QD)</option><option>Twice daily (BID)</option><option>Three times daily (TID)</option><option>Four times daily (QID)</option><option>Every other day</option><option>Weekly</option><option>As needed (PRN)</option><option>Other</option></select></div>' +
+    '<div class="field"><label class="field-label">Prescribing provider</label><input type="text" placeholder="Provider name"></div>' +
+    '<div class="field"><label class="field-label">Start date (approx.)</label><input type="date"></div>';
+  card.appendChild(r2);
+
+  const r3 = document.createElement('div');
+  r3.className = 'field';
+  r3.innerHTML = '<label class="field-label">Indication / reason for use</label><input type="text" placeholder="e.g. High blood pressure, diabetes">';
+  card.appendChild(r3);
+
+  container.appendChild(card);
+}
+
+function addDC() {
+  const container = document.getElementById('dc-meds');
+  const n = ++dcCount;
+  const uid = 'dc_' + n;
+  const card = document.createElement('div');
+  card.className = 'med-card';
+  card.id = 'card-' + uid;
+
+  const header = document.createElement('div');
+  header.className = 'med-card-header';
+  header.innerHTML = '<span class="med-card-num">Discontinued medication ' + n + '</span><button class="remove-med" onclick="removeCard(\'card-' + uid + '\')">Remove</button>';
+  card.appendChild(header);
+  card.appendChild(makeRxField(uid, 'Medication name'));
+
+  const r = document.createElement('div');
+  r.className = 'row2';
+  r.style.marginTop = '8px';
+  r.innerHTML =
+    '<div class="field"><label class="field-label">Reason discontinued</label><input type="text" placeholder="e.g. Side effects, no longer needed, cost"></div>' +
+    '<div class="field"><label class="field-label">Approximate date stopped</label><input type="date"></div>';
+  card.appendChild(r);
+  container.appendChild(card);
+}
+
+function removeCard(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function handleSubmit() {
+  if (!document.getElementById('attest').checked) {
+    alert('Please check the patient attestation box before submitting.');
+    return;
+  }
+  const fname = document.getElementById('fname').value.trim();
+  const lname = document.getElementById('lname').value.trim();
+  if (!fname || !lname) {
+    alert('Please enter the patient first and last name.');
+    return;
+  }
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 4000);
+  // TODO: wire to Supabase or Jotform API endpoint here
+}
+
+// Seed one row each on load
+addMed('rx-meds', 'rx');
+addMed('otc-meds', 'otc');
+</script>
+</body>
+</html>
